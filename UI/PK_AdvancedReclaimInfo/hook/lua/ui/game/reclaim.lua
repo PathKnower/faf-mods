@@ -1,16 +1,37 @@
--- Strogo: Make a reclaim counter
 local ShowReclaimCounter
-
+local onScreenCalculationFunction
 local OriginalUpdateLabels = UpdateLabels
-function UpdateLabels()
-    OriginalUpdateLabels()
+
+function getOnScreenMassForOldReclaimCalculation()
     local onScreenMassTotal = 0
 
-    for _, r in Reclaim do
+    for _, r in reclaimDataPool do
         onScreenMassTotal = onScreenMassTotal + r.mass
     end
-    
-    
+
+    return onScreenMassTotal
+end
+
+function getOnScreenMassForNewReclaimCalculation()
+    local onScreenMassTotal = 0
+
+    for _, r in reclaimDataPool do
+        onScreenMassTotal = onScreenMassTotal + r.mass
+    end
+
+    return onScreenMassTotal
+end
+
+if reclaimDataPool == nil then
+    onScreenCalculationFunction = getOnScreenMassForOldReclaimCalculation
+else
+    onScreenCalculationFunction = getOnScreenMassForNewReclaimCalculation
+end
+
+function UpdateLabels()
+    OriginalUpdateLabels()
+    local onScreenMassTotal = onScreenCalculationFunction()
+
     if ShowReclaimCounter then
         reclaimFrame:Destroy()
         reclaimFrame = nil
