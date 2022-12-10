@@ -1,24 +1,17 @@
 -- Strogo: Make a reclaim counter
-local ReclaimTotal
+local ShowReclaimCounter
 
+local OriginalUpdateLabels = UpdateLabels
 function UpdateLabels()
-    local view = import('/lua/ui/game/worldview.lua').viewLeft -- Left screen's camera
-    local onScreenReclaimIndex = 1
-    local onScreenReclaims = {}
+    OriginalUpdateLabels()
     local onScreenMassTotal = 0
 
-    -- One might be tempted to use a binary insert; however, tests have shown that it takes about 140x more time
     for _, r in Reclaim do
-        r.onScreen = OnScreen(view, r.position)
-        if r.onScreen and r.mass >= MinAmount then
-            onScreenMassTotal = onScreenMassTotal + r.mass
-            onScreenReclaims[onScreenReclaimIndex] = r
-            onScreenReclaimIndex = onScreenReclaimIndex + 1
-        end
+        onScreenMassTotal = onScreenMassTotal + r.mass
     end
     
     
-    if ReclaimTotal then
+    if ShowReclaimCounter then
         reclaimFrame:Destroy()
         reclaimFrame = nil
         reclaimLine:Destroy()
@@ -26,40 +19,7 @@ function UpdateLabels()
         CreateRecalimTotalUI(onScreenMassTotal)
     else
         CreateRecalimTotalUI(onScreenMassTotal)
-        ReclaimTotal = true
-    end
-    
-    table.sort(onScreenReclaims, function(a, b) return a.mass > b.mass end)
-
-    -- Create/Update as many reclaim labels as we need
-    local labelIndex = 1
-    for _, r in onScreenReclaims do
-        if labelIndex > MaxLabels then
-            break
-        end
-        local label = LabelPool[labelIndex]
-        if label and IsDestroyed(label) then
-            label = nil
-        end
-        if not label then
-            label = CreateReclaimLabel(view.ReclaimGroup, r)
-            LabelPool[labelIndex] = label
-        end
-
-        label:DisplayReclaim(r)
-        labelIndex = labelIndex + 1
-    end
-
-    -- -- Hide labels we didn't use
-    for index = labelIndex, MaxLabels do
-        local label = LabelPool[index]
-        if label then
-            if IsDestroyed(label) then
-                LabelPool[index] = nil
-            elseif not label:IsHidden() then
-                label:Hide()
-            end
-        end
+        ShowReclaimCounter = true
     end
 end
 
@@ -76,12 +36,12 @@ function OnCommandGraphShow(bool)
                 
                 keydown = IsKeyDown('Control')
 
-                if keydown == false and ReclaimTotal then
+                if keydown == false and ShowReclaimCounter then
                     reclaimFrame:Destroy()
                     reclaimFrame = nil
                     reclaimLine:Destroy()
                     reclaimLine = nil
-                    ReclaimTotal = nil
+                    ShowReclaimCounter = nil
                 end
                 
                 if keydown ~= view.ShowingReclaim then -- state has changed
@@ -90,12 +50,12 @@ function OnCommandGraphShow(bool)
                 WaitSeconds(.1)
             end
             
-            if ReclaimTotal then
+            if ShowReclaimCounter then
                 reclaimFrame:Destroy()
                 reclaimFrame = nil
                 reclaimLine:Destroy()
                 reclaimLine = nil
-                ReclaimTotal = nil
+                ShowReclaimCounter = nil
             end
             
             ShowReclaim(false)
